@@ -1,11 +1,9 @@
 import 'dart:async';
 import 'dart:convert';
 
-import 'package:cafebazaar_iab/cafebazaar_iab.dart';
-import 'package:cafebazaar_iab/inventory.dart';
-import 'package:cafebazaar_iab/purchase.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:cafebazaar_iab/cafebazaar_iab.dart';
 
 void main() => runApp(MyApp());
 
@@ -17,7 +15,7 @@ class MyApp extends StatefulWidget {
 class _MyAppState extends State<MyApp> {
   String _platformVersion = 'Unknown';
   String _publicKey =
-      "cafebazar public key";
+      "";
 
   Inventory inventory;
   @override

@@ -1,6 +1,6 @@
 import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:cafebazaar_iab/cafebazaar_iab.dart';
+import 'package:cafebazaar_iab/src/cafebazaar_iab.dart';
 
 void main() {
   const MethodChannel channel = MethodChannel('cafebazar_iab');

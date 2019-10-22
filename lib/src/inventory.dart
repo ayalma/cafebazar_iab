@@ -13,8 +13,8 @@
 /// limitations under the License.
 ///
 
-import 'package:cafebazaar_iab/purchase.dart';
-import 'package:cafebazaar_iab/sku_details.dart';
+import 'package:cafebazaar_iab/src/purchase.dart';
+import 'package:cafebazaar_iab/src/sku_details.dart';
 import 'package:json_annotation/json_annotation.dart';
 
 ///
