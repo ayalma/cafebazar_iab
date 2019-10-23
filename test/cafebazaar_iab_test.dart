@@ -16,6 +16,6 @@ void main() {
   });
 
   test('getPlatformVersion', () async {
-    expect(await CafebazaarIab().init((res){}, ""), '42');
+    expect(await CafebazaarIab().init(""), '42');
   });
 }

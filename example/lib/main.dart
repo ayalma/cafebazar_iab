@@ -1,9 +1,8 @@
 import 'dart:async';
 import 'dart:convert';
 
-import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
 import 'package:cafebazaar_iab/cafebazaar_iab.dart';
+import 'package:flutter/material.dart';
 
 void main() => runApp(MyApp());
 
@@ -17,41 +16,11 @@ class _MyAppState extends State<MyApp> {
   String _publicKey =
       "";
 
-  Inventory inventory;
   @override
   void initState() {
     super.initState();
-    initPlatformState();
-  }
-
-  // Platform messages are asynchronous, so we initialize in an async method.
-  Future<void> initPlatformState() async {
-
-    String platformVersion;
-    // Platform messages may fail, so we use a try/catch PlatformException.
-    try {
-      platformVersion = (await CafebazaarIab().init(
-        (res) {
-          setState(() {
-            _platformVersion = res.message;
-          });
-          print(res);
-          return Future.value(true);
-        },
-        _publicKey,
-      ))
-          .toString();
-    } on PlatformException {
-      platformVersion = 'Failed to get platform version.';
-    }
-
-    // If the widget was removed from the tree while the asynchronous platform
-    // message was in flight, we want to discard the reply rather than calling
-    // setState to update our non-existent appearance.
-    if (!mounted) return;
-
-    setState(() {
-      _platformVersion = platformVersion;
+    var subscription = CafebazaarIab().queryInventoryResult.listen((data){
+      data
     });
   }
 
@@ -62,47 +31,90 @@ class _MyAppState extends State<MyApp> {
         appBar: AppBar(
           title: const Text('Plugin example app'),
         ),
-        body: Column(
-          children: <Widget>[
-            Text('Running on: $_platformVersion\n'),
+        body: Container(
+          width: double.infinity,
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.center,
+            children: <Widget>[
+              StreamBuilder<Resource<IabResult>>(
+                stream: CafebazaarIab().initResult,
+                builder: (context, snapshot) {
+                  var isLoading = false;
+                  var resource = snapshot.data;
+                  if (snapshot.hasData) {
+                    switch (resource.status) {
+                      case Status.Loading:
+                        isLoading = true;
+                        break;
+                      case Status.Error:
+                        isLoading = false;
+                        break;
+                      case Status.Success:
+                        isLoading = false;
+                        break;
+                    }
+                  } else if (snapshot.hasError) {}
 
-            RaisedButton(
-              onPressed: () async {
-                CafebazaarIab().queryInventoryAsync((result,inv){
-                  print(json.encode(inv.toJson()));
-                  setState(() {
-                    inventory = inv;
-                  });
-                  return Future.value(true);
-                },null,querySkuDetail: true);
-              },
-              child: Text("Query Inventory"),
-            ),
-            RaisedButton(
-              onPressed: () async {
-                CafebazaarIab().launchPurchaseFlow("test","payload",(result,info){
-                  print(json.encode(result.toJson()));
-                  return Future.value(true);
-                });
-              },
-              child: Text("Buy"),
-            ),
-            RaisedButton(
-              onPressed: () async {
-                CafebazaarIab().consumeAsync(inventory.getPurchase("test"),(result,info){
-                  print(json.encode(result.toJson()));
-                  return Future.value(true);
-                });
-              },
-              child: Text("Consume"),
-            ),
-            if(inventory!=null)
-            Expanded(
-              child: ListView.builder(itemBuilder: (context,index){
-                return ListTile(title: Text(inventory.mSkuMap.values.toList()[index].mDescription),);
-              },itemCount: inventory.mSkuMap.length,),
-            )
-          ],
+                  return Padding(
+                    padding: const EdgeInsets.all(8.0),
+                    child: ButtonTheme(
+                      height: 50.0,
+                      child: OutlineButton.icon(
+                        shape: OutlineInputBorder(gapPadding: 16.0),
+                        onPressed: (isLoading)
+                            ? null
+                            : () {
+                                CafebazaarIab().init(_publicKey);
+                              },
+                        icon: (isLoading)
+                            ? SizedBox(
+                                width: 16,
+                                height: 16,
+                                child: CircularProgressIndicator(),
+                              )
+                            : Icon(Icons.shopping_basket),
+                        label: Text("Purchase"),
+                      ),
+                    ),
+                  );
+                },
+              ),
+              RaisedButton(
+                onPressed: () async {
+                  CafebazaarIab()
+                      .queryInventoryAsync(null, querySkuDetail: true);
+                },
+                child: Text("Query Inventory"),
+              ),
+              RaisedButton(
+                onPressed: () async {
+                  CafebazaarIab().launchPurchaseFlow("test", "payload");
+                },
+                child: Text("Buy"),
+              ),
+              RaisedButton(
+                onPressed: () async {
+                  CafebazaarIab().consumeAsync(inventory.getPurchase("test"),);
+                },
+                child: Text("Consume"),
+              ),
+              if (inventory != null)
+                Expanded(
+                  child: ListView.builder(
+                    itemBuilder: (context, index) {
+                      return Card(
+                        child: ListTile(
+                          title: Text(
+                            inventory.mSkuMap.values.toList()[index].mJson,
+                          ),
+                        ),
+                      );
+                    },
+                    itemCount: inventory.mSkuMap.length,
+                  ),
+                )
+            ],
+          ),
         ),
       ),
     );

@@ -2,17 +2,15 @@ import 'dart:async';
 import 'dart:convert';
 
 import 'package:cafebazaar_iab/src/iab_result.dart';
+import 'package:cafebazaar_iab/src/inventory.dart';
+import 'package:cafebazaar_iab/src/inventory_result.dart';
 import 'package:cafebazaar_iab/src/purchase.dart';
+import 'package:cafebazaar_iab/src/purchase_result.dart';
+import 'package:cafebazaar_iab/src/resource.dart';
 import 'package:flutter/services.dart';
 
-import 'package:cafebazaar_iab/src/inventory.dart';
-
-typedef OnIabSetupFinished = Future<dynamic> Function(IabResult result);
-typedef OnQueryInventoryFinished = Future<dynamic> Function(
-    IabResult result, Inventory inventory);
-
-typedef OnIabPurchaseFinished = Future<dynamic> Function(
-    IabResult result, Purchase info);
+import 'consume_multi_result.dart';
+import 'consume_result.dart';
 
 typedef OnConsumeMultiFinished = Future<dynamic> Function(
     List<IabResult> results, List<Purchase> purchases);
@@ -21,7 +19,7 @@ typedef OnConsumeFinished = Future<dynamic> Function(
     IabResult result, Purchase purchase);
 
 class CafebazaarIab {
-  static final CafebazaarIab _instance = CafebazaarIab.internal();
+  static final CafebazaarIab _instance = CafebazaarIab._internal();
 
   static const String _CAFEBAZAAR_IAB = "cafebazaar_iab";
   static const String _INIT = "cb_iab_init";
@@ -45,82 +43,124 @@ class CafebazaarIab {
   factory CafebazaarIab() => _instance;
 
   MethodChannel _channel;
-  OnIabSetupFinished _iabSetupFinished;
-  OnQueryInventoryFinished _onQueryInventoryFinished;
-  OnIabPurchaseFinished _onIabPurchaseFinished;
-  OnConsumeMultiFinished _onConsumeMultiFinished;
-  OnConsumeFinished _onConsumeFinished;
 
-  CafebazaarIab.internal() {
+  StreamController<Resource<IabResult>> _initController =
+      new StreamController();
+
+  Stream<Resource<IabResult>> get initResult => _initController.stream;
+
+  StreamController<Resource<InventoryResult>> _queryInventoryController =
+      new StreamController();
+
+  Stream<Resource<InventoryResult>> get queryInventoryResult =>
+      _queryInventoryController.stream;
+
+  StreamController<Resource<PurchaseResult>> _purchaseController =
+      new StreamController();
+
+  Stream<Resource<PurchaseResult>> get purchaseResult =>
+      _purchaseController.stream;
+
+  StreamController<Resource<ConsumeMultiResult>> _consumeMultiController =
+      new StreamController();
+
+  Stream<Resource<ConsumeMultiResult>> get consumeMultiResult =>
+      _consumeMultiController.stream;
+
+  StreamController<Resource<ConsumeResult>> _consumeController =
+      new StreamController();
+
+  Stream<Resource<ConsumeResult>> get consumeResult =>
+      _consumeController.stream;
+
+  CafebazaarIab._internal() {
     _channel = const MethodChannel(_CAFEBAZAAR_IAB);
     _channel.setMethodCallHandler(_handleMethod);
   }
 
-  Future<bool> init(OnIabSetupFinished iabSetupFinished,
-      String base64EncodedPublicKey) async {
-    _iabSetupFinished = iabSetupFinished;
+  Future<bool> init(String base64EncodedPublicKey) async {
+    _initController.add(Resource.loading());
+    await Future.delayed(Duration(seconds: 2));
     return await _channel.invokeMethod<bool>(_INIT, [base64EncodedPublicKey]);
   }
 
-  Future<bool> queryInventoryAsync(
-      OnQueryInventoryFinished onQueryInventoryFinished, List<String> moreSku,
+  Future<bool> queryInventoryAsync(List<String> moreSku,
       {bool querySkuDetail = true}) async {
-    _onQueryInventoryFinished = onQueryInventoryFinished;
+    _queryInventoryController.add(Resource.loading());
     return await _channel
         .invokeMethod(_QUERY_INVENTORY_ASYNC, [querySkuDetail, moreSku]);
   }
 
-  Future<bool> launchPurchaseFlow(String sku, String payload,
-      OnIabPurchaseFinished onIabPurchaseFinished) async {
-    _onIabPurchaseFinished = onIabPurchaseFinished;
+  Future<bool> launchPurchaseFlow(String sku, String payload) async {
+    _purchaseController.add(Resource.loading());
     return await _channel.invokeMethod(_LAUNCH_PURCHASE_FLOW, [sku, payload]);
   }
 
-  Future<bool> consumeMultiAsync(List<Purchase> purchases,OnConsumeMultiFinished onConsumeMultiFinished)async {
-    _onConsumeMultiFinished = onConsumeMultiFinished;
-    return await _channel.invokeMethod(_CONSUME_MULTI_ASYNC,json.encode(purchases.map((purchase)=>purchase.toJson()).toList()));
+  Future<bool> consumeMultiAsync(List<Purchase> purchases,
+      OnConsumeMultiFinished onConsumeMultiFinished) async {
+    _consumeMultiController.add(Resource.loading());
+    return await _channel.invokeMethod(_CONSUME_MULTI_ASYNC,
+        json.encode(purchases.map((purchase) => purchase.toJson()).toList()));
   }
 
-  Future<bool> consumeAsync(Purchase purchase,OnConsumeFinished onConsumeFinished) async{
-    _onConsumeFinished = onConsumeFinished;
-    return await _channel.invokeMethod(_CONSUME_ASYNC,json.encode(purchase.toJson()));
+  Future<bool> consumeAsync(
+      Purchase purchase, OnConsumeFinished onConsumeFinished) async {
+    _consumeController.add(Resource.loading());
+    return await _channel.invokeMethod(
+        _CONSUME_ASYNC, json.encode(purchase.toJson()));
   }
 
   Future<bool> dispose() {
+    _initController.close();
+    _queryInventoryController.close();
+    _consumeMultiController.close();
+    _consumeController.close();
+    _purchaseController.close();
+
     return _channel.invokeMethod<bool>(_DISPOSE);
   }
 
-  Future<void> _handleMethod(MethodCall call) {
+  Future<void> _handleMethod(MethodCall call) async {
     switch (call.method) {
       case _ON_IAB_SETUP_FINISHED:
         var test = IabResult.fromJson(json.decode(call.arguments));
-        return _iabSetupFinished(test);
+        _initController.add(Resource.success(test));
+        break;
       case _QUERY_INVENTORY_FINISHED:
         var result = IabResult.fromJson(json.decode(call.arguments[0]));
-        var invJson;
+        var inventory;
         if (call.arguments[1] != null)
-          invJson = Inventory.fromJson(json.decode(call.arguments[1]));
-        return _onQueryInventoryFinished(result, invJson);
+          inventory = Inventory.fromJson(json.decode(call.arguments[1]));
+
+        _queryInventoryController
+            .add(Resource.success(InventoryResult(result, inventory)));
+        break;
+
       case _ON_IAB_PURCHASE_FINISHED:
         var result = IabResult.fromJson(json.decode(call.arguments[0]));
         var purchase;
         if (call.arguments[1] != null)
           purchase = Purchase.fromJson(json.decode(call.arguments[1]));
-        return _onIabPurchaseFinished(result, purchase);
+        _purchaseController
+            .add(Resource.success(PurchaseResult(result, purchase)));
         break;
 
       case _ON_CONSUME_MULTI_FINISHED:
-
-        var resultsIterable = json.decode(call.arguments[0]) as Iterable<Map<String,dynamic>>;
-        var results = resultsIterable.map((item)=>IabResult.fromJson(item)).toList();
+        var resultsIterable =
+            json.decode(call.arguments[0]) as Iterable<Map<String, dynamic>>;
+        var results =
+            resultsIterable.map((item) => IabResult.fromJson(item)).toList();
 
         var purchases = List(0);
         if (call.arguments[1] != null) {
-          var purchasesIterable = json.decode(call.arguments[1]) as Iterable<Map<String,dynamic>>;
-          purchases = purchasesIterable.map((item)=>Purchase.fromJson(item)).toList();
+          var purchasesIterable =
+              json.decode(call.arguments[1]) as Iterable<Map<String, dynamic>>;
+          purchases =
+              purchasesIterable.map((item) => Purchase.fromJson(item)).toList();
         }
-
-        return _onConsumeMultiFinished(results,purchases);
+        _consumeMultiController
+            .add(Resource.success(ConsumeMultiResult(results, purchases)));
+        break;
 
       case _ON_CONSUME_FINISHED:
         var result = IabResult.fromJson(json.decode(call.arguments[0]));
@@ -129,7 +169,9 @@ class CafebazaarIab {
         if (call.arguments[1] != null)
           purchase = Purchase.fromJson(json.decode(call.arguments[1]));
 
-        return _onConsumeFinished(result,purchase);
+        _consumeController
+            .add(Resource.success(ConsumeResult(result, purchase)));
+        break;
       default:
         return Future.error('method not defined');
     }
