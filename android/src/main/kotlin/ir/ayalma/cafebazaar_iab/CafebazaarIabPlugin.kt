@@ -125,7 +125,7 @@ class CafebazaarIabPlugin(private val registrar: Registrar) : MethodCallHandler,
 
     private fun catchIllegalStateException(ex: IllegalStateException, methodResult: Result) {
         Log.d(CAFEBAZAAR_IAB, "Please retry in a few seconds")
-        iabHelper?.flagEndAsync()
+//        iabHelper?.flagEndAsync()
         methodResult.error(ex.message, ex.cause.toString(), ex)
     }
 
