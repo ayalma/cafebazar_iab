@@ -1,12 +1,12 @@
 package ir.ayalma.cafebazaar_iab
 
 import android.content.Intent
+import android.util.Log
 import com.google.gson.GsonBuilder
 import com.google.gson.reflect.TypeToken
 import io.flutter.plugin.common.MethodCall
 import io.flutter.plugin.common.MethodChannel
-import io.flutter.plugin.common.MethodChannel.MethodCallHandler
-import io.flutter.plugin.common.MethodChannel.Result
+import io.flutter.plugin.common.MethodChannel.*
 import io.flutter.plugin.common.PluginRegistry
 import io.flutter.plugin.common.PluginRegistry.Registrar
 import ir.ayalma.cafebazaar_iab.util.IabHelper
@@ -65,46 +65,68 @@ class CafebazaarIabPlugin(private val registrar: Registrar) : MethodCallHandler,
         var args = call.arguments as ArrayList<*>
         var querySkuDetails = args[0] as Boolean
         var moreSkus = args[1] as? ArrayList<String>
-        
-        iabHelper?.flagEndAsync()
-        iabHelper?.queryInventoryAsync(querySkuDetails, moreSkus) { result, inv: Inventory? ->
-            channel.invokeMethod(QUERY_INVENTORY_FINISHED, arrayListOf<String>(gson.toJson(result), gson.toJson(inv)))
+
+        try {
+            iabHelper?.queryInventoryAsync(querySkuDetails, moreSkus) { result, inv: Inventory? ->
+                channel.invokeMethod(QUERY_INVENTORY_FINISHED, arrayListOf<String>(gson.toJson(result), gson.toJson(inv)))
+            }
+            methodResult.success(true)
         }
-        methodResult.success(true)
+        catch (ex: IllegalStateException) {
+            catchIllegalStateException(ex, methodResult)
+        }
     }
 
     private fun launchPurchaseFlow(call: MethodCall, methodResult: Result) {
         val args = call.arguments as ArrayList<*>
         val sku = args[0] as String
         val payload = args[1] as String
-        
-        iabHelper?.flagEndAsync()
-        iabHelper?.launchPurchaseFlow(registrar.activity(), sku, PURCHASE_REQUEST_CODE, { result, info ->
-            channel.invokeMethod(ON_IAB_PURCHASE_FINISHED, arrayListOf<String>(gson.toJson(result), gson.toJson(info)))
-        }, payload)
-        methodResult.success(true)
+
+        try {
+            iabHelper?.launchPurchaseFlow(registrar.activity(), sku, PURCHASE_REQUEST_CODE, { result, info ->
+                channel.invokeMethod(ON_IAB_PURCHASE_FINISHED, arrayListOf<String>(gson.toJson(result), gson.toJson(info)))
+            }, payload)
+            methodResult.success(true)
+        }
+        catch (ex: IllegalStateException) {
+            catchIllegalStateException(ex, methodResult)
+        }
     }
 
     private fun consumeAsync(call: MethodCall, methodResult: Result) {
 
         var purchase = gson.fromJson(call.arguments as String,Purchase::class.java)
 
-        iabHelper?.flagEndAsync()
-        iabHelper?.consumeAsync(purchase) { purchaseResult, result ->
-            channel.invokeMethod(ON_CONSUME_FINISHED, arrayListOf<String>(gson.toJson(result), gson.toJson(purchaseResult)))
+        try {
+            iabHelper?.consumeAsync(purchase) { purchaseResult, result ->
+                channel.invokeMethod(ON_CONSUME_FINISHED, arrayListOf<String>(gson.toJson(result), gson.toJson(purchaseResult)))
+            }
+            methodResult.success(true)
         }
-        methodResult.success(true)
+        catch (ex: IllegalStateException) {
+            catchIllegalStateException(ex, methodResult)
+        }
     }
 
-    private fun consumeMultiAsync(call: MethodCall, result: Result) {
+    private fun consumeMultiAsync(call: MethodCall, methodResult: Result) {
         val type = object : TypeToken<List<Purchase>>() {}
         var purchases: List<Purchase> = gson.fromJson(call.arguments as String, type.type)
 
-        iabHelper?.flagEndAsync()
-        iabHelper?.consumeAsync(purchases) { purchasesResult, results ->
-            channel.invokeMethod(ON_CONSUME_MULTI_FINISHED, arrayListOf<String>(gson.toJson(results), gson.toJson(purchasesResult)))
+        try {
+            iabHelper?.consumeAsync(purchases) { purchasesResult, results ->
+                channel.invokeMethod(ON_CONSUME_MULTI_FINISHED, arrayListOf<String>(gson.toJson(results), gson.toJson(purchasesResult)))
+            }
+            methodResult.success(true)
         }
-        result.success(true)
+        catch (ex: IllegalStateException) {
+            catchIllegalStateException(ex, methodResult)
+        }
+    }
+
+    private fun catchIllegalStateException(ex: IllegalStateException, methodResult: Result) {
+        Log.d(CAFEBAZAAR_IAB, "Please retry in a few seconds")
+        iabHelper?.flagEndAsync()
+        methodResult.error(ex.message, ex.cause.toString(), ex)
     }
 
     override fun onActivityResult(requestCode: Int, resultCode: Int, data: Intent?): Boolean {
