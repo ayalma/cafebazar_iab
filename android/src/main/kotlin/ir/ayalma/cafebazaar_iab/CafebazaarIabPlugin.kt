@@ -75,7 +75,7 @@ class CafebazaarIabPlugin(private val registrar: Registrar) : MethodCallHandler,
         val args = call.arguments as ArrayList<*>
         val sku = args[0] as String
         val payload = args[1] as String
-
+        iabHelper?.flagEndAsync()
         iabHelper?.launchPurchaseFlow(registrar.activity(), sku, PURCHASE_REQUEST_CODE, { result, info ->
             channel.invokeMethod(ON_IAB_PURCHASE_FINISHED, arrayListOf<String>(gson.toJson(result), gson.toJson(info)))
         }, payload)
