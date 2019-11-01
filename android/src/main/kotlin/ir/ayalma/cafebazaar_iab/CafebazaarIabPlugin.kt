@@ -65,6 +65,8 @@ class CafebazaarIabPlugin(private val registrar: Registrar) : MethodCallHandler,
         var args = call.arguments as ArrayList<*>
         var querySkuDetails = args[0] as Boolean
         var moreSkus = args[1] as? ArrayList<String>
+        
+        iabHelper?.flagEndAsync()
         iabHelper?.queryInventoryAsync(querySkuDetails, moreSkus) { result, inv: Inventory? ->
             channel.invokeMethod(QUERY_INVENTORY_FINISHED, arrayListOf<String>(gson.toJson(result), gson.toJson(inv)))
         }
@@ -75,6 +77,7 @@ class CafebazaarIabPlugin(private val registrar: Registrar) : MethodCallHandler,
         val args = call.arguments as ArrayList<*>
         val sku = args[0] as String
         val payload = args[1] as String
+        
         iabHelper?.flagEndAsync()
         iabHelper?.launchPurchaseFlow(registrar.activity(), sku, PURCHASE_REQUEST_CODE, { result, info ->
             channel.invokeMethod(ON_IAB_PURCHASE_FINISHED, arrayListOf<String>(gson.toJson(result), gson.toJson(info)))
@@ -86,6 +89,7 @@ class CafebazaarIabPlugin(private val registrar: Registrar) : MethodCallHandler,
 
         var purchase = gson.fromJson(call.arguments as String,Purchase::class.java)
 
+        iabHelper?.flagEndAsync()
         iabHelper?.consumeAsync(purchase) { purchaseResult, result ->
             channel.invokeMethod(ON_CONSUME_FINISHED, arrayListOf<String>(gson.toJson(result), gson.toJson(purchaseResult)))
         }
@@ -96,6 +100,7 @@ class CafebazaarIabPlugin(private val registrar: Registrar) : MethodCallHandler,
         val type = object : TypeToken<List<Purchase>>() {}
         var purchases: List<Purchase> = gson.fromJson(call.arguments as String, type.type)
 
+        iabHelper?.flagEndAsync()
         iabHelper?.consumeAsync(purchases) { purchasesResult, results ->
             channel.invokeMethod(ON_CONSUME_MULTI_FINISHED, arrayListOf<String>(gson.toJson(results), gson.toJson(purchasesResult)))
         }
