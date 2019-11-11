@@ -1,4 +1,4 @@
 #import <Flutter/Flutter.h>
 
-@interface CafebazarIabPlugin : NSObject<FlutterPlugin>
+@interface FLTCafebazarIabPlugin : NSObject<FlutterPlugin>
 @end

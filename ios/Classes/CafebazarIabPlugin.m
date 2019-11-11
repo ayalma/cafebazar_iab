@@ -1,8 +1,16 @@
 #import "CafebazarIabPlugin.h"
-#import <cafebazar_iab/cafebazar_iab-Swift.h>
 
-@implementation CafebazarIabPlugin
+@implementation FLTCafebazarIabPlugin
 + (void)registerWithRegistrar:(NSObject<FlutterPluginRegistrar>*)registrar {
-  [SwiftCafebazarIabPlugin registerWithRegistrar:registrar];
+  FlutterMethodChannel* channel =
+      [FlutterMethodChannel methodChannelWithName:@"cafebazar_iab"
+                                  binaryMessenger:[registrar messenger]];
+  FLTCafebazarIabPlugin* instance = [[FLTCafebazarIabPlugin alloc] init];
+  [registrar addMethodCallDelegate:instance channel:channel];
 }
+
+- (void)handleMethodCall:(FlutterMethodCall*)call result:(FlutterResult)result {
+  result(FlutterMethodNotImplemented);
+}
+
 @end
