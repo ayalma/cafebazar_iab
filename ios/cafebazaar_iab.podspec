@@ -2,11 +2,11 @@
 # To learn more about a Podspec see http://guides.cocoapods.org/syntax/podspec.html
 #
 Pod::Spec.new do |s|
-  s.name             = 'cafebazar_iab'
+  s.name             = 'cafebazaar_iab'
   s.version          = '0.0.1'
-  s.summary          = 'Flutter plugin for cafe bazar in app billing'
+  s.summary          = 'Flutter plugin for cafe bazaar in app billing'
   s.description      = <<-DESC
-Flutter plugin for cafe bazar in app billing
+Flutter plugin for cafe bazaar in app billing
                        DESC
   s.homepage         = 'http://example.com'
   s.license          = { :file => '../LICENSE' }
