@@ -2,11 +2,11 @@
 # To learn more about a Podspec see http://guides.cocoapods.org/syntax/podspec.html
 #
 Pod::Spec.new do |s|
-  s.name             = 'cafebazar_iab'
+  s.name             = 'cafebazaar_iab'
   s.version          = '0.0.1'
-  s.summary          = 'Flutter plugin for cafe bazar in app billing'
+  s.summary          = 'Flutter plugin for cafe bazaar in app billing'
   s.description      = <<-DESC
-Flutter plugin for cafe bazar in app billing
+Flutter plugin for cafe bazaar in app billing
                        DESC
   s.homepage         = 'http://example.com'
   s.license          = { :file => '../LICENSE' }
@@ -15,7 +15,7 @@ Flutter plugin for cafe bazar in app billing
   s.source_files = 'Classes/**/*'
   s.public_header_files = 'Classes/**/*.h'
   s.dependency 'Flutter'
-
-  s.ios.deployment_target = '8.0'
+  s.platform = :ios, '8.0'
+  s.pod_target_xcconfig = { 'DEFINES_MODULE' => 'YES', 'VALID_ARCHS[sdk=iphonesimulator*]' => 'x86_64' }
 end
 

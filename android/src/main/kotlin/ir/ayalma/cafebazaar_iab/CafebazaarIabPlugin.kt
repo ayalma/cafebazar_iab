@@ -132,9 +132,10 @@ class CafebazaarIabPlugin(private val registrar: Registrar) : MethodCallHandler,
     override fun onActivityResult(requestCode: Int, resultCode: Int, data: Intent?): Boolean {
 
         if (requestCode == PURCHASE_REQUEST_CODE) {
+            Log.d(CAFEBAZAAR_IAB, "Handled result")
             return iabHelper?.handleActivityResult(requestCode, resultCode, data) ?: true
         }
-        return true
+        return false
     }
 
     companion object {
